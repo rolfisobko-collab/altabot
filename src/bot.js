@@ -166,7 +166,10 @@ async function poll(token) {
  */
 async function startBot() {
   const token = getConfig().telegramToken || process.env.TELEGRAM_TOKEN;
-  if (!token) throw new Error("TELEGRAM_TOKEN no configurado.");
+  if (!token) {
+    console.warn("[Bot] TELEGRAM_TOKEN no configurado — bot en espera. Configuralo desde el panel.");
+    return;
+  }
 
   currentToken = token;
   await tg(token, "deleteWebhook", { drop_pending_updates: true });
