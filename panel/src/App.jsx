@@ -461,6 +461,45 @@ export default function App() {
                 </Card>
 
                 <Card>
+                  <h2 className="font-semibold text-gray-800 mb-1">Claves de API</h2>
+                  <p className="text-xs text-gray-400 mb-4">Se guardan en MongoDB, no en el código. Dejá vacío para usar las variables de entorno del servidor.</p>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Groq API Key</label>
+                      <input
+                        type="password"
+                        className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                        placeholder="gsk_..."
+                        value={config.groqApiKey || ""}
+                        onChange={e => setConfig(c => ({ ...c, groqApiKey: e.target.value }))}
+                      />
+                      <p className="text-xs text-gray-400 mt-1">Obtenala gratis en <a href="https://console.groq.com" target="_blank" rel="noreferrer" className="text-indigo-500 underline">console.groq.com</a></p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Telegram Bot Token</label>
+                      <input
+                        type="password"
+                        className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                        placeholder="1234567890:AAH..."
+                        value={config.telegramToken || ""}
+                        onChange={e => setConfig(c => ({ ...c, telegramToken: e.target.value }))}
+                      />
+                      <p className="text-xs text-gray-400 mt-1">Obtenelo de <a href="https://t.me/BotFather" target="_blank" rel="noreferrer" className="text-indigo-500 underline">@BotFather</a> en Telegram</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">MongoDB URI</label>
+                      <input
+                        type="password"
+                        className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                        placeholder="mongodb+srv://..."
+                        value={config.mongodbUri || ""}
+                        onChange={e => setConfig(c => ({ ...c, mongodbUri: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                </Card>
+
+                <Card>
                   <h2 className="font-semibold text-gray-800 mb-4">Parámetros de productos</h2>
                   <div className="grid grid-cols-2 gap-4">
                     <div>

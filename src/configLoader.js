@@ -21,15 +21,17 @@ async function reloadConfig() {
         maxProductsInResponse: doc.maxProductsInResponse || defaultConfig.maxProductsInResponse,
         maxProductsFromDB: doc.maxProductsFromDB || defaultConfig.maxProductsFromDB,
         telegramToken: doc.telegramToken || process.env.TELEGRAM_TOKEN,
+        groqApiKey: doc.groqApiKey || process.env.GROQ_API_KEY,
+        mongodbUri: doc.mongodbUri || process.env.MONGODB_URI,
       };
       console.log("[Config] Loaded from MongoDB");
     } else {
-      activeConfig = { ...defaultConfig, telegramToken: process.env.TELEGRAM_TOKEN };
+      activeConfig = { ...defaultConfig, telegramToken: process.env.TELEGRAM_TOKEN, groqApiKey: process.env.GROQ_API_KEY, mongodbUri: process.env.MONGODB_URI };
       console.log("[Config] Using default config.js");
     }
   } catch (err) {
     console.error("[Config] Failed to load from DB, using defaults:", err.message);
-    activeConfig = { ...defaultConfig, telegramToken: process.env.TELEGRAM_TOKEN };
+    activeConfig = { ...defaultConfig, telegramToken: process.env.TELEGRAM_TOKEN, groqApiKey: process.env.GROQ_API_KEY, mongodbUri: process.env.MONGODB_URI };
   }
 }
 

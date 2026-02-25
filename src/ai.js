@@ -3,7 +3,11 @@ const { getConfig } = require("./configLoader");
 const { searchProducts } = require("./products");
 const { getDb } = require("./db");
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+// Groq client is created per-request so it picks up hot-reloaded API key
+function getGroqClient() {
+  const key = getConfig().groqApiKey || process.env.GROQ_API_KEY;
+  return new Groq({ apiKey: key });
+}
 
 // In-memory conversation history per user (chatId -> array of messages)
 const conversationHistory = new Map();
@@ -112,7 +116,7 @@ async function processMessage(chatId, userMessage) {
   let responseText;
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
-      const completion = await groq.chat.completions.create({
+      const completion = await getGroqClient().chat.completions.create({
         model: "llama-3.3-70b-versatile",
         messages,
         max_tokens: 1024,
