@@ -59,6 +59,30 @@ function buildProductContext(products) {
 }
 
 /**
+ * Fetch latest exchange rates from MongoDB and format them for the AI context.
+ */
+async function getExchangeRatesContext() {
+  try {
+    const db = await getDb();
+    const rates = await db.collection("exchangeRates").find({}).toArray();
+    if (!rates.length) return "";
+
+    const flags = { ARS: "🇦🇷", REAL: "🇧🇷", GUARANI: "🇵🇾" };
+    const names = { ARS: "Pesos argentinos", REAL: "Reales brasileños", GUARANI: "Guaraníes paraguayos" };
+
+    const lines = rates.map(r => {
+      const flag = flags[r.toCurrency] || "";
+      const name = names[r.toCurrency] || r.toCurrency;
+      return `1 USD = ${r.rate.toLocaleString("es-AR")} ${flag} ${name}`;
+    });
+
+    return `COTIZACIONES ACTUALES (usar siempre estos valores, nunca inventar precios en otras monedas):\n${lines.join("\n")}`;
+  } catch {
+    return "";
+  }
+}
+
+/**
  * Get or create conversation history for a chat.
  */
 function getHistory(chatId) {
@@ -85,22 +109,22 @@ function trimHistory(history) {
  * @returns {Promise<{text: string, products: Array}>}
  */
 async function processMessage(chatId, userMessage) {
-  // Fetch product context if the message seems product-related
+  // Fetch product context and exchange rates in parallel
   let productContext = "";
   let matchedProducts = [];
-  if (isProductQuery(userMessage)) {
-    try {
-      matchedProducts = await searchProducts(userMessage);
-      productContext = buildProductContext(matchedProducts);
-    } catch (err) {
-      console.error("[AI] Error fetching products:", err.message);
-      productContext = "No se pudo consultar la base de datos en este momento.";
-    }
-  }
+  const [ratesContext] = await Promise.all([
+    getExchangeRatesContext(),
+    isProductQuery(userMessage)
+      ? searchProducts(userMessage)
+          .then(p => { matchedProducts = p; productContext = buildProductContext(p); })
+          .catch(err => { console.error("[AI] Error fetching products:", err.message); productContext = "No se pudo consultar la base de datos en este momento."; })
+      : Promise.resolve(),
+  ]);
 
-  // Build system prompt with optional DB context
+  // Build system prompt with exchange rates always included + optional product context
   const systemPrompt =
     getConfig().systemPrompt +
+    (ratesContext ? `\n\n--- ${ratesContext} ---` : "") +
     (productContext
       ? `\n\n--- CONTEXTO DE BASE DE DATOS ---\n${productContext}\n--- FIN CONTEXTO ---`
       : "");
