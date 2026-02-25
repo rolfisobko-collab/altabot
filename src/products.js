@@ -1,0 +1,126 @@
+const { getDb } = require("./db");
+const config = require("./config");
+
+/**
+ * Builds a MongoDB text/regex search query from a user message.
+ * Splits the query into keywords and searches name field with each.
+ */
+function buildSearchQuery(userQuery) {
+  // Clean the query: remove common filler words in Spanish
+  const stopWords = [
+    "el", "la", "los", "las", "un", "una", "unos", "unas",
+    "de", "del", "para", "con", "sin", "por", "que", "como",
+    "tiene", "hay", "tengo", "busco", "necesito", "quiero",
+    "precio", "cuanto", "cuesta", "vale", "cuánto",
+    "me", "te", "le", "se", "si", "no", "es", "en",
+  ];
+
+  const keywords = userQuery
+    .toLowerCase()
+    .replace(/[¿?¡!.,;:]/g, " ")
+    .split(/\s+/)
+    .filter((w) => w.length > 2 && !stopWords.includes(w));
+
+  if (keywords.length === 0) return null;
+
+  // Each keyword must appear in the name (AND logic for precision)
+  const andConditions = keywords.map((kw) => ({
+    name: { $regex: kw, $options: "i" },
+  }));
+
+  return { $and: andConditions };
+}
+
+/**
+ * Search products in MongoDB by user query string.
+ * Returns an array of formatted product objects.
+ */
+async function searchProducts(userQuery) {
+  const db = await getDb();
+  const query = buildSearchQuery(userQuery);
+
+  if (!query) return [];
+
+  const raw = await db
+    .collection("stock")
+    .find(query)
+    .limit(config.maxProductsFromDB)
+    .toArray();
+
+  // Also try with fewer keywords if we get zero results (fallback: OR logic)
+  if (raw.length === 0) {
+    const keywords = userQuery
+      .toLowerCase()
+      .replace(/[¿?¡!.,;:]/g, " ")
+      .split(/\s+/)
+      .filter((w) => w.length > 2);
+
+    if (keywords.length > 1) {
+      const orConditions = keywords.map((kw) => ({
+        name: { $regex: kw, $options: "i" },
+      }));
+      const fallback = await db
+        .collection("stock")
+        .find({ $or: orConditions })
+        .limit(config.maxProductsFromDB)
+        .toArray();
+      return formatProducts(fallback);
+    }
+  }
+
+  return formatProducts(raw);
+}
+
+/**
+ * Get products by category name (partial match).
+ */
+async function getProductsByCategory(categoryName) {
+  const db = await getDb();
+
+  // First find the category ID
+  const category = await db.collection("stockCategories").findOne({
+    name: { $regex: categoryName, $options: "i" },
+  });
+
+  if (!category) return [];
+
+  const raw = await db
+    .collection("stock")
+    .find({ category: category._id })
+    .limit(config.maxProductsFromDB)
+    .toArray();
+
+  return formatProducts(raw);
+}
+
+/**
+ * List all available categories.
+ */
+async function getCategories() {
+  const db = await getDb();
+  const cats = await db.collection("stockCategories").find().toArray();
+  return cats.map((c) => c.name).filter(Boolean);
+}
+
+/**
+ * Format raw DB products into clean objects for the AI context.
+ */
+function formatProducts(products) {
+  return products.slice(0, config.maxProductsInResponse).map((p) => {
+    const imageUrl = p.image1 || (Array.isArray(p.images) && p.images[0]) || null;
+    return {
+      name: p.name?.trim(),
+      price: p.promoPrice ?? p.price,
+      promoPrice: p.promoPrice ?? null,
+      regularPrice: p.price,
+      currency: p.currency || config.currency,
+      quantity: p.quantity ?? p.stock ?? 0,
+      inStock: (p.quantity ?? p.stock ?? 0) > 0,
+      location: p.location || null,
+      category: p.category || null,
+      imageUrl: imageUrl && imageUrl.startsWith("http") ? imageUrl : null,
+    };
+  });
+}
+
+module.exports = { searchProducts, getProductsByCategory, getCategories };
