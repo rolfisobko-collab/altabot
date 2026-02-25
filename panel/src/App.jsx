@@ -361,79 +361,92 @@ export default function App() {
 
           {/* CHATS */}
           {tab === "chats" && (
-            <div className="flex gap-4 h-[calc(100vh-120px)]">
-              {/* Chat list */}
-              <div className="w-72 flex-shrink-0 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-y-auto">
-                <div className="px-4 py-3 border-b border-gray-100">
-                  <h2 className="font-semibold text-gray-800 text-sm">Conversaciones</h2>
-                  <p className="text-xs text-gray-400">{chats.length} chats guardados</p>
-                </div>
-                {chatsLoading && (
-                  <div className="px-4 py-8 text-center text-sm text-gray-400"><RefreshCw size={16} className="animate-spin mx-auto mb-2"/>Cargando...</div>
-                )}
-                {!chatsLoading && chats.length === 0 && (
-                  <div className="px-4 py-8 text-center text-sm text-gray-400">Aún no hay chats.<br/>Cuando alguien escriba al bot aparecerán acá.</div>
-                )}
-                {chats.map(c => (
-                  <button
-                    key={c.chatId}
-                    onClick={() => openChat(c.chatId)}
-                    className={`w-full text-left px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition-all ${
-                      selectedChat === c.chatId ? "bg-indigo-50 border-l-2 border-l-indigo-500" : ""
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium text-sm text-gray-800 truncate">{c.chatId.replace("wa_", "")}</span>
-                      <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${
-                        c.channel === "whatsapp" ? "bg-green-100 text-green-700" : "bg-sky-100 text-sky-700"
-                      }`}>{c.channel === "whatsapp" ? "WA" : "TG"}</span>
-                    </div>
-                    <div className="text-xs text-gray-400 mt-0.5">
-                      {c.updatedAt ? new Date(c.updatedAt).toLocaleString("es-AR", { dateStyle: "short", timeStyle: "short" }) : ""}
-                    </div>
-                  </button>
-                ))}
-              </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 mb-1">Chats</h1>
+              <p className="text-gray-500 text-sm mb-6">Conversaciones de la IA con tus clientes</p>
 
-              {/* Messages */}
-              <div className="flex-1 bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col overflow-hidden">
-                {!selectedChat ? (
-                  <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">
-                    <div className="text-center">
-                      <MessagesSquare size={40} className="mx-auto mb-3 opacity-30" />
-                      Seleccioná una conversación para verla
+              {!selectedChat ? (
+                <div className="grid grid-cols-2 gap-5">
+                  {/* Telegram */}
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                    <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
+                      <Bot size={15} className="text-sky-500"/>
+                      <h2 className="font-semibold text-gray-800 text-sm">Telegram</h2>
+                      <span className="ml-auto text-xs text-gray-400">{chats.filter(c => c.channel !== "whatsapp").length} chats</span>
+                    </div>
+                    {chatsLoading && <div className="px-4 py-8 text-center text-sm text-gray-400"><RefreshCw size={14} className="animate-spin mx-auto mb-1"/>Cargando...</div>}
+                    {!chatsLoading && chats.filter(c => c.channel !== "whatsapp").length === 0 && (
+                      <div className="px-4 py-8 text-center text-sm text-gray-400">Sin chats de Telegram aún.</div>
+                    )}
+                    {chats.filter(c => c.channel !== "whatsapp").map(c => (
+                      <button key={c.chatId} onClick={() => openChat(c.chatId)}
+                        className="w-full text-left px-4 py-3 border-b border-gray-50 hover:bg-sky-50 transition-all">
+                        <div className="font-medium text-sm text-gray-800 truncate">{c.chatId}</div>
+                        <div className="text-xs text-gray-400 mt-0.5">
+                          {c.updatedAt ? new Date(c.updatedAt).toLocaleString("es-AR", { dateStyle: "short", timeStyle: "short" }) : ""}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* WhatsApp */}
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                    <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
+                      <MessageCircle size={15} className="text-green-500"/>
+                      <h2 className="font-semibold text-gray-800 text-sm">WhatsApp</h2>
+                      <span className="ml-auto text-xs text-gray-400">{chats.filter(c => c.channel === "whatsapp").length} chats</span>
+                    </div>
+                    {chatsLoading && <div className="px-4 py-8 text-center text-sm text-gray-400"><RefreshCw size={14} className="animate-spin mx-auto mb-1"/>Cargando...</div>}
+                    {!chatsLoading && chats.filter(c => c.channel === "whatsapp").length === 0 && (
+                      <div className="px-4 py-8 text-center text-sm text-gray-400">Sin chats de WhatsApp aún.</div>
+                    )}
+                    {chats.filter(c => c.channel === "whatsapp").map(c => (
+                      <button key={c.chatId} onClick={() => openChat(c.chatId)}
+                        className="w-full text-left px-4 py-3 border-b border-gray-50 hover:bg-green-50 transition-all">
+                        <div className="font-medium text-sm text-gray-800 truncate">{c.chatId.replace("wa_", "")}</div>
+                        <div className="text-xs text-gray-400 mt-0.5">
+                          {c.updatedAt ? new Date(c.updatedAt).toLocaleString("es-AR", { dateStyle: "short", timeStyle: "short" }) : ""}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                /* Message viewer */
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col" style={{height: "calc(100vh - 160px)"}}>
+                  <div className="px-5 py-3 border-b border-gray-100 flex items-center gap-2">
+                    <button onClick={() => { setSelectedChat(null); setChatMessages([]); }} className="text-gray-400 hover:text-gray-600 mr-1">
+                      <ChevronLeft size={18}/>
+                    </button>
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center ${selectedChat.startsWith("wa_") ? "bg-green-100" : "bg-sky-100"}`}>
+                      {selectedChat.startsWith("wa_") ? <MessageCircle size={13} className="text-green-600"/> : <Bot size={13} className="text-sky-600"/>}
+                    </div>
+                    <div>
+                      <div className="font-semibold text-gray-800 text-sm">{selectedChat.replace("wa_", "")}</div>
+                      <div className="text-xs text-gray-400">{chatMessages.length} mensajes</div>
                     </div>
                   </div>
-                ) : (
-                  <>
-                    <div className="px-5 py-3 border-b border-gray-100 flex items-center gap-2">
-                      <button onClick={() => { setSelectedChat(null); setChatMessages([]); }} className="text-gray-400 hover:text-gray-600 mr-1">
-                        <ChevronLeft size={18}/>
-                      </button>
-                      <div>
-                        <div className="font-semibold text-gray-800 text-sm">{selectedChat.replace("wa_", "")}</div>
-                        <div className="text-xs text-gray-400">{chatMessages.length} mensajes</div>
-                      </div>
-                    </div>
-                    <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
-                      {chatMessages.map((m, i) => (
-                        <div key={i} className={`flex ${ m.role === "user" ? "justify-end" : "justify-start" }`}>
-                          <div className={`max-w-[75%] px-3 py-2 rounded-2xl text-sm whitespace-pre-wrap ${
-                            m.role === "user"
-                              ? "bg-indigo-600 text-white rounded-br-sm"
-                              : "bg-gray-100 text-gray-800 rounded-bl-sm"
-                          }`}>
-                            {m.text}
-                            <div className={`text-xs mt-1 opacity-60 ${ m.role === "user" ? "text-right" : "" }`}>
-                              {m.ts ? new Date(m.ts).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" }) : ""}
-                            </div>
+                  <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+                    {chatMessages.length === 0 && (
+                      <div className="text-center text-sm text-gray-400 mt-10">No hay mensajes en esta conversación.</div>
+                    )}
+                    {chatMessages.map((m, i) => (
+                      <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+                        <div className={`max-w-[75%] px-3 py-2 rounded-2xl text-sm whitespace-pre-wrap ${
+                          m.role === "user"
+                            ? "bg-indigo-600 text-white rounded-br-sm"
+                            : "bg-gray-100 text-gray-800 rounded-bl-sm"
+                        }`}>
+                          {m.text}
+                          <div className={`text-xs mt-1 opacity-60 ${m.role === "user" ? "text-right" : ""}`}>
+                            {m.ts ? new Date(m.ts).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" }) : ""}
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
