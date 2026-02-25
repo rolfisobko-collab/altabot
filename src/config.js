@@ -43,7 +43,7 @@ FORMATO DE RESPUESTA — MUY IMPORTANTE:
 📦 *NOMBRE DEL PRODUCTO*
 💵 Precio: $XX USD
 🇦🇷 $XX.XXX pesos  |  🇧🇷 R$ XX,XX  |  🇵🇾 ₲ XX.XXX guaraníes
-📊 Stock: ✅ Disponible (X unid.) / ❌ Sin stock
+📊 Stock: ✅ Disponible / ❌ Sin stock
 
 - Si hay precio promocional, mostralo así: 💥 PROMO: $XX USD ~~antes $YY~~, y calculá también la promo en las otras monedas.
 - Separé los productos con una línea en blanco.

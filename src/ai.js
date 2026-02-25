@@ -50,7 +50,7 @@ function buildProductContext(products) {
         ? `$${p.promoPrice} ${p.currency} (PROMO, antes $${p.regularPrice})`
         : `$${p.price} ${p.currency}`;
 
-    const stockStr = p.inStock ? `✅ En stock (${p.quantity} unid.)` : "❌ Sin stock";
+    const stockStr = p.inStock ? "✅ En stock" : "❌ Sin stock";
 
     return `- ${p.name} | ${priceStr} | ${stockStr}`;
   });
