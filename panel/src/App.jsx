@@ -112,6 +112,18 @@ export default function App() {
     fetchAll();
   };
 
+  // Fast QR polling — only when on WhatsApp tab and waiting for QR
+  useEffect(() => {
+    if (tab !== "whatsapp") return;
+    const poll = setInterval(async () => {
+      try {
+        const d = await fetch(`${API}/whatsapp/qr`).then(r => r.json());
+        setWaStatus(prev => ({ ...prev, qrDataUrl: d.qrDataUrl, status: d.status }));
+      } catch (e) { void e; }
+    }, 1000);
+    return () => clearInterval(poll);
+  }, [tab]);
+
   const disconnectWA = async () => {
     await fetch(`${API}/whatsapp/disconnect`, { method: "POST" });
     fetchAll();

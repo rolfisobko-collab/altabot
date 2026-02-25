@@ -66,6 +66,12 @@ router.post("/whatsapp/connect", async (req, res) => {
   }
 });
 
+router.get("/whatsapp/qr", (req, res) => {
+  const { getWhatsappStatus } = require("./whatsapp");
+  const { qrDataUrl, status } = getWhatsappStatus();
+  res.json({ qrDataUrl, status });
+});
+
 router.post("/whatsapp/disconnect", async (req, res) => {
   try {
     const { disconnectWhatsapp } = require("./whatsapp");
