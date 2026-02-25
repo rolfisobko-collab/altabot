@@ -1,4 +1,4 @@
-const { default: makeWASocket, DisconnectReason, useMultiFileAuthState } = require("@whiskeysockets/baileys");
+const { default: makeWASocket, DisconnectReason, useMultiFileAuthState, fetchLatestBaileysVersion } = require("@whiskeysockets/baileys");
 const qrcode = require("qrcode");
 const path = require("path");
 const { processMessage } = require("./ai");
@@ -25,11 +25,16 @@ async function connectWhatsapp() {
   qrRaw = null;
 
   const { state, saveCreds } = await useMultiFileAuthState(AUTH_PATH);
+  const { version } = await fetchLatestBaileysVersion();
+  console.log(`[WA] Using WA version ${version.join(".")}`);
 
   sock = makeWASocket({
     auth: state,
+    version,
     printQRInTerminal: false,
-    browser: ["AltaBot", "Chrome", "1.0"],
+    browser: ["Ubuntu", "Chrome", "22.04"],
+    syncFullHistory: false,
+    connectTimeoutMs: 20000,
   });
 
   sock.ev.on("creds.update", saveCreds);

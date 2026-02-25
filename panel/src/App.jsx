@@ -451,6 +451,11 @@ export default function App() {
           )}
 
           {/* CONFIG */}
+          {tab === "config" && config === null && (
+            <div className="flex items-center justify-center h-40 text-gray-400 text-sm gap-2">
+              <RefreshCw size={16} className="animate-spin"/> Cargando configuración...
+            </div>
+          )}
           {tab === "config" && config !== null && (
             <div>
               <h1 className="text-2xl font-bold text-gray-900 mb-1">Configuración</h1>

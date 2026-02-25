@@ -8,9 +8,11 @@ const router = express.Router();
 // ── Config ──────────────────────────────────────────────────
 router.get("/config", async (req, res) => {
   try {
+    const { getConfig } = require("./configLoader");
+    const defaults = getConfig();
     const db = await getDb();
     const doc = await db.collection("nova_config").findOne({ _id: "bot_config" });
-    res.json(doc || {});
+    res.json({ ...defaults, ...(doc || {}), _id: undefined });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
