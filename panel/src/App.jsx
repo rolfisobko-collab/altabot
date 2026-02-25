@@ -208,7 +208,13 @@ export default function App() {
                     <div className="flex items-center gap-2 font-semibold text-gray-800"><Bot size={18}/> Telegram</div>
                     <StatusBadge ok={tgStatus.connected} labelOn="Conectado" labelOff="Desconectado" />
                   </div>
-                  <p className="text-sm text-gray-500 mb-4">Bot <strong>{tgStatus.username || "@buebasbotbot"}</strong> — responde consultas por Telegram</p>
+                  <p className="text-sm text-gray-500 mb-4">
+                    Bot{" "}
+                    {tgStatus.username ? (
+                      <a href={`https://t.me/${tgStatus.username.replace("@","")}`} target="_blank" rel="noreferrer" className="text-sky-600 font-semibold hover:underline">{tgStatus.username}</a>
+                    ) : <strong>@buebasbotbot</strong>}
+                    {" "}— responde consultas por Telegram
+                  </p>
                   <Btn onClick={restartTelegram} disabled={restarting} variant="secondary">
                     <RefreshCw size={15} className={restarting ? "animate-spin" : ""} />
                     {restarting ? "Reiniciando..." : "Reiniciar bot"}
@@ -241,7 +247,11 @@ export default function App() {
                     <Bot size={22} className="text-sky-600" />
                   </div>
                   <div>
-                    <div className="font-semibold text-gray-900">{tgStatus.username || "Bot de Telegram"}</div>
+                    <div className="font-semibold text-gray-900">
+                      {tgStatus.username ? (
+                        <a href={`https://t.me/${tgStatus.username.replace("@","")}`} target="_blank" rel="noreferrer" className="text-sky-600 hover:underline">{tgStatus.username}</a>
+                      ) : "Bot de Telegram"}
+                    </div>
                     <StatusBadge ok={tgStatus.connected} labelOn="Conectado" labelOff="Desconectado" />
                   </div>
                 </div>
