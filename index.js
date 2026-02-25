@@ -4,7 +4,7 @@ const { reloadConfig } = require("./src/configLoader");
 const { startBot } = require("./src/bot");
 const { createApp } = require("./src/api");
 
-const PORT = process.env.PORT || 8000; // v2
+const PORT = process.env.PORT || 8000; // v3
 
 async function main() {
   console.log("[App] Starting IA Chat Bot...");
