@@ -6,7 +6,8 @@ const { getDb } = require("./db");
 // Groq client is created per-request so it picks up hot-reloaded API key
 function getGroqClient() {
   const key = getConfig().groqApiKey || process.env.GROQ_API_KEY;
-  return new Groq({ apiKey: key });
+  if (!key) throw new Error("Groq API key no configurada. Agregala en MongoDB (groqApiKey) o como env var GROQ_API_KEY.");
+  return new Groq({ apiKey: key, dangerouslyAllowBrowser: true });
 }
 
 // In-memory conversation history per user (chatId -> array of messages)
