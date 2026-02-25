@@ -1,14 +1,23 @@
-const { default: makeWASocket, DisconnectReason, useMultiFileAuthState } = require("@whiskeysockets/baileys");
+const { default: makeWASocket, DisconnectReason, makeCacheableSignalKeyStore, initAuthCreds, BufferJSON } = require("@whiskeysockets/baileys");
 const qrcode = require("qrcode");
-const path = require("path");
 const { processMessage } = require("./ai");
-
-const AUTH_PATH = path.join(__dirname, "../.wa_auth");
 
 let sock = null;
 let status = "disconnected"; // disconnected | connecting | qr_ready | connected
 let qrDataUrl = null;
 let qrRaw = null;
+
+// In-memory auth state so it works on ephemeral filesystems (Koyeb, etc.)
+let memAuthState = null;
+
+function useInMemoryAuthState() {
+  if (!memAuthState) {
+    memAuthState = { creds: initAuthCreds(), keys: {} };
+  }
+  const state = memAuthState;
+  const saveCreds = () => {}; // no-op, already in memory
+  return { state, saveCreds };
+}
 
 function getWhatsappStatus() {
   return { status, qrDataUrl, qrRaw };
@@ -24,7 +33,7 @@ async function connectWhatsapp() {
   qrDataUrl = null;
   qrRaw = null;
 
-  const { state, saveCreds } = await useMultiFileAuthState(AUTH_PATH);
+  const { state, saveCreds } = useInMemoryAuthState();
 
   sock = makeWASocket({
     auth: state,

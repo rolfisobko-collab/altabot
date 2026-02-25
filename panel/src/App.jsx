@@ -56,6 +56,7 @@ export default function App() {
   const [waStatus, setWaStatus] = useState({ status: "disconnected", qrDataUrl: null });
   // Chats
   const [chats, setChats] = useState([]);
+  const [chatsLoading, setChatsLoading] = useState(true);
   const [selectedChat, setSelectedChat] = useState(null);
   const [chatMessages, setChatMessages] = useState([]);
 
@@ -75,13 +76,14 @@ export default function App() {
         fetch(`${API}/telegram/status`).then(r => r.json()),
         fetch(`${API}/whatsapp/status`).then(r => r.json()),
         fetch(`${API}/config`).then(r => r.json()),
-        fetch(`${API}/chats`).then(r => r.json()),
+        fetch(`${API}/chats`).then(r => r.json()).catch(() => []),
       ]);
       setStats(s);
       setTgStatus(tg);
       setWaStatus(wa);
       setConfig(prev => prev ?? cfg);
-      setChats(ch);
+      setChats(Array.isArray(ch) ? ch : []);
+      setChatsLoading(false);
     } catch (e) {
       console.error(e);
     }
@@ -206,7 +208,7 @@ export default function App() {
                     <div className="flex items-center gap-2 font-semibold text-gray-800"><Bot size={18}/> Telegram</div>
                     <StatusBadge ok={tgStatus.connected} labelOn="Conectado" labelOff="Desconectado" />
                   </div>
-                  <p className="text-sm text-gray-500 mb-4">Bot <strong>@buebasbotbot</strong> — responde consultas por Telegram</p>
+                  <p className="text-sm text-gray-500 mb-4">Bot <strong>{tgStatus.username || "@buebasbotbot"}</strong> — responde consultas por Telegram</p>
                   <Btn onClick={restartTelegram} disabled={restarting} variant="secondary">
                     <RefreshCw size={15} className={restarting ? "animate-spin" : ""} />
                     {restarting ? "Reiniciando..." : "Reiniciar bot"}
@@ -239,7 +241,7 @@ export default function App() {
                     <Bot size={22} className="text-sky-600" />
                   </div>
                   <div>
-                    <div className="font-semibold text-gray-900">@buebasbotbot</div>
+                    <div className="font-semibold text-gray-900">{tgStatus.username || "Bot de Telegram"}</div>
                     <StatusBadge ok={tgStatus.connected} labelOn="Conectado" labelOff="Desconectado" />
                   </div>
                 </div>
@@ -344,7 +346,10 @@ export default function App() {
                   <h2 className="font-semibold text-gray-800 text-sm">Conversaciones</h2>
                   <p className="text-xs text-gray-400">{chats.length} chats guardados</p>
                 </div>
-                {chats.length === 0 && (
+                {chatsLoading && (
+                  <div className="px-4 py-8 text-center text-sm text-gray-400"><RefreshCw size={16} className="animate-spin mx-auto mb-2"/>Cargando...</div>
+                )}
+                {!chatsLoading && chats.length === 0 && (
                   <div className="px-4 py-8 text-center text-sm text-gray-400">Aún no hay chats.<br/>Cuando alguien escriba al bot aparecerán acá.</div>
                 )}
                 {chats.map(c => (

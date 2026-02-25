@@ -7,6 +7,7 @@ let running = false;
 let offset = 0;
 let connected = false;
 let currentToken = null;
+let botUsername = null;
 
 /**
  * Call Telegram Bot API.
@@ -173,11 +174,13 @@ async function startBot() {
 
   currentToken = token;
   await tg(token, "deleteWebhook", { drop_pending_updates: true });
+  const me = await tg(token, "getMe");
+  botUsername = me?.username ? `@${me.username}` : "Bot activo";
 
   running = true;
   connected = true;
   offset = 0;
-  console.log(`[Bot] Telegram bot started`);
+  console.log(`[Bot] Telegram bot started as ${botUsername}`);
   poll(token);
 }
 
@@ -193,7 +196,7 @@ function stopBot() {
 }
 
 function getTelegramStatus() {
-  return { connected, token: currentToken ? "configured" : "missing" };
+  return { connected, token: currentToken ? "configured" : "missing", username: botUsername };
 }
 
 module.exports = { startBot, stopBot, restartBot, getTelegramStatus };
