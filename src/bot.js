@@ -100,8 +100,8 @@ async function handleMessage(token, msg) {
     // Send the main AI text response
     await safeSend(token, chatId, responseText);
 
-    // Send images for products that have one (max 3 to avoid spam)
-    const withImages = (products || []).filter((p) => p.imageUrl).slice(0, 3);
+    // Send images for all products that have one (up to 8)
+    const withImages = (products || []).filter((p) => p.imageUrl).slice(0, 8);
     for (const p of withImages) {
       const priceStr =
         !p.price || p.price === 0
@@ -110,9 +110,7 @@ async function handleMessage(token, msg) {
           ? `💥 *PROMO: $${p.promoPrice} ${p.currency}* ~~$${p.regularPrice}~~`
           : `💵 *$${p.price} ${p.currency}*`;
 
-      const stockStr = p.inStock
-        ? `✅ En stock (${p.quantity} unidades)`
-        : `❌ Sin stock por el momento`;
+      const stockStr = p.inStock ? `✅ En stock` : `❌ Sin stock`;
 
       const caption = `📦 *${p.name}*\n${priceStr}\n${stockStr}`;
 

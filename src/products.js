@@ -5,25 +5,34 @@ const config = require("./config");
  * Builds a MongoDB text/regex search query from a user message.
  * Splits the query into keywords and searches name field with each.
  */
+/**
+ * Normalize a string: lowercase + remove accents/tildes.
+ * e.g. "módulo" → "modulo", "batería" → "bateria"
+ */
+function normalize(str) {
+  return str
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
 function buildSearchQuery(userQuery) {
-  // Clean the query: remove common filler words in Spanish
   const stopWords = [
     "el", "la", "los", "las", "un", "una", "unos", "unas",
     "de", "del", "para", "con", "sin", "por", "que", "como",
     "tiene", "hay", "tengo", "busco", "necesito", "quiero",
-    "precio", "cuanto", "cuesta", "vale", "cuánto",
+    "precio", "cuanto", "cuesta", "vale", "cuanto",
     "me", "te", "le", "se", "si", "no", "es", "en",
   ];
 
-  const keywords = userQuery
-    .toLowerCase()
-    .replace(/[¿?¡!.,;:]/g, " ")
+  const keywords = normalize(userQuery)
+    .replace(/[\u00bf?\u00a1!.,;:]/g, " ")
     .split(/\s+/)
     .filter((w) => w.length > 2 && !stopWords.includes(w));
 
   if (keywords.length === 0) return null;
 
-  // Each keyword must appear in the name (AND logic for precision)
+  // Each keyword matches with accent-insensitive regex
   const andConditions = keywords.map((kw) => ({
     name: { $regex: kw, $options: "i" },
   }));
@@ -49,9 +58,8 @@ async function searchProducts(userQuery) {
 
   // Also try with fewer keywords if we get zero results (fallback: OR logic)
   if (raw.length === 0) {
-    const keywords = userQuery
-      .toLowerCase()
-      .replace(/[¿?¡!.,;:]/g, " ")
+    const keywords = normalize(userQuery)
+      .replace(/[\u00bf?\u00a1!.,;:]/g, " ")
       .split(/\s+/)
       .filter((w) => w.length > 2);
 
