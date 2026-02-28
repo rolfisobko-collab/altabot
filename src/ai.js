@@ -145,7 +145,7 @@ async function processMessage(chatId, userMessage) {
         model: "llama-3.3-70b-versatile",
         messages,
         max_tokens: 1024,
-        temperature: 0.7,
+        temperature: 0.2,
       });
       responseText = completion.choices[0].message.content;
       break;
