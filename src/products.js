@@ -50,33 +50,54 @@ async function searchProducts(userQuery) {
 
   if (!query) return [];
 
+  const keywords = normalize(userQuery)
+    .replace(/[\u00bf?\u00a1!.,;:]/g, " ")
+    .split(/\s+/)
+    .filter((w) => w.length > 2);
+
   const raw = await db
     .collection("stock")
     .find(query)
     .limit(config.maxProductsFromDB)
     .toArray();
 
-  // Also try with fewer keywords if we get zero results (fallback: OR logic)
-  if (raw.length === 0) {
-    const keywords = normalize(userQuery)
-      .replace(/[\u00bf?\u00a1!.,;:]/g, " ")
-      .split(/\s+/)
-      .filter((w) => w.length > 2);
-
-    if (keywords.length > 1) {
-      const orConditions = keywords.map((kw) => ({
-        name: { $regex: kw, $options: "i" },
-      }));
-      const fallback = await db
-        .collection("stock")
-        .find({ $or: orConditions })
-        .limit(config.maxProductsFromDB)
-        .toArray();
-      return formatProducts(fallback);
-    }
+  // Sort by how many keywords match (most relevant first)
+  if (raw.length > 0) {
+    raw.sort((a, b) => {
+      const nameA = normalize(a.name || "");
+      const nameB = normalize(b.name || "");
+      const scoreA = keywords.filter((kw) => nameA.includes(kw)).length;
+      const scoreB = keywords.filter((kw) => nameB.includes(kw)).length;
+      return scoreB - scoreA;
+    });
+    return formatProducts(raw);
   }
 
-  return formatProducts(raw);
+  // Fallback: only if query has a specific model keyword (number or alphanumeric like "13", "a52", "redmi")
+  const modelKeywords = keywords.filter((kw) => /\d/.test(kw) || kw.length <= 4);
+  if (modelKeywords.length > 0) {
+    // Must match at least one model keyword AND one other keyword (AND logic, not pure OR)
+    const fallbackConditions = modelKeywords.map((kw) => ({
+      name: { $regex: kw, $options: "i" },
+    }));
+    const fallback = await db
+      .collection("stock")
+      .find({ $or: fallbackConditions })
+      .limit(config.maxProductsFromDB)
+      .toArray();
+
+    // Sort fallback by relevance too
+    fallback.sort((a, b) => {
+      const nameA = normalize(a.name || "");
+      const nameB = normalize(b.name || "");
+      const scoreA = keywords.filter((kw) => nameA.includes(kw)).length;
+      const scoreB = keywords.filter((kw) => nameB.includes(kw)).length;
+      return scoreB - scoreA;
+    });
+    return formatProducts(fallback);
+  }
+
+  return [];
 }
 
 /**
