@@ -16,12 +16,25 @@ function normalize(str) {
     .replace(/[\u0300-\u036f]/g, "");
 }
 
+// Map of normalized chars to accent-tolerant regex equivalents
+const ACCENT_MAP = {
+  a: "[aáàäâã]", e: "[eéèëê]", i: "[iíìïî]",
+  o: "[oóòöôõ]", u: "[uúùüû]", n: "[nñ]",
+};
+
+function accentTolerantRegex(normalizedWord) {
+  return normalizedWord
+    .split("")
+    .map((c) => ACCENT_MAP[c] || c)
+    .join("");
+}
+
 function buildSearchQuery(userQuery) {
   const stopWords = [
     "el", "la", "los", "las", "un", "una", "unos", "unas",
     "de", "del", "para", "con", "sin", "por", "que", "como",
     "tiene", "hay", "tengo", "busco", "necesito", "quiero",
-    "precio", "cuanto", "cuesta", "vale", "cuanto",
+    "precio", "cuanto", "cuesta", "vale",
     "me", "te", "le", "se", "si", "no", "es", "en",
   ];
 
@@ -32,9 +45,9 @@ function buildSearchQuery(userQuery) {
 
   if (keywords.length === 0) return null;
 
-  // Each keyword matches with accent-insensitive regex
+  // Each keyword uses accent-tolerant regex so 'modulo' matches 'MÓDULO' in DB
   const andConditions = keywords.map((kw) => ({
-    name: { $regex: kw, $options: "i" },
+    name: { $regex: accentTolerantRegex(kw), $options: "i" },
   }));
 
   return { $and: andConditions };
@@ -61,7 +74,7 @@ async function searchProducts(userQuery) {
     .limit(config.maxProductsFromDB)
     .toArray();
 
-  // Sort by how many keywords match (most relevant first)
+  // Sort by how many keywords match in normalized name (most relevant first)
   if (raw.length > 0) {
     raw.sort((a, b) => {
       const nameA = normalize(a.name || "");
@@ -71,30 +84,6 @@ async function searchProducts(userQuery) {
       return scoreB - scoreA;
     });
     return formatProducts(raw);
-  }
-
-  // Fallback: only if query has a specific model keyword (number or alphanumeric like "13", "a52", "redmi")
-  const modelKeywords = keywords.filter((kw) => /\d/.test(kw) || kw.length <= 4);
-  if (modelKeywords.length > 0) {
-    // Must match at least one model keyword AND one other keyword (AND logic, not pure OR)
-    const fallbackConditions = modelKeywords.map((kw) => ({
-      name: { $regex: kw, $options: "i" },
-    }));
-    const fallback = await db
-      .collection("stock")
-      .find({ $or: fallbackConditions })
-      .limit(config.maxProductsFromDB)
-      .toArray();
-
-    // Sort fallback by relevance too
-    fallback.sort((a, b) => {
-      const nameA = normalize(a.name || "");
-      const nameB = normalize(b.name || "");
-      const scoreA = keywords.filter((kw) => nameA.includes(kw)).length;
-      const scoreB = keywords.filter((kw) => nameB.includes(kw)).length;
-      return scoreB - scoreA;
-    });
-    return formatProducts(fallback);
   }
 
   return [];
