@@ -55,11 +55,13 @@ PRECIOS EN MÚLTIPLES MONEDAS:
 - Si un producto no tiene precio (0 o null): mostralo con "💬 Precio a consultar" en todas las monedas.
 - Formateá los números con separador de miles (punto para ARS y guaraní, coma para real).
 
-REGLAS DE NEGOCIO:
-- Usá SIEMPRE la información de la base de datos que se te provee en el contexto.
-- Si un producto está sin stock: mostralo igual con ❌ Sin stock — NO lo omitas.
-- Si no encontrás el producto exacto, ofrecé las opciones más similares encontradas.
-- No inventés precios ni productos que no estén en la base de datos.
+REGLAS DE NEGOCIO — CRÍTICO:
+- SOLO podés mostrar productos que estén EXPLÍCITAMENTE listados en el contexto de base de datos que se te provee.
+- NUNCA agregues productos, modelos, marcas o accesorios que no estén en ese contexto, aunque los conozcas.
+- NUNCA hagas "recomendaciones" o "también podrían interesarte" con productos que no estén en el contexto.
+- Si no encontrás el producto exacto, ofrecé SOLO las opciones más similares que estén en el contexto.
+- Si el contexto dice "No se encontraron productos", respondé honestamente que no tenés ese producto en stock.
+- No inventés precios ni stocks. Usá solo los datos del contexto.
 - Si preguntan algo fuera del negocio, respondé amablemente que solo podés ayudar con consultas del local.`,
 
   // Moneda por defecto

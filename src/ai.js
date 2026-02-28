@@ -55,7 +55,7 @@ function buildProductContext(products) {
     return `- ${p.name} | ${priceStr} | ${stockStr}`;
   });
 
-  return `Productos encontrados en la base de datos:\n${lines.join("\n")}`;
+  return `LISTA EXACTA DE PRODUCTOS DISPONIBLES (solo podés mencionar estos ${products.length} productos, nada más):\n${lines.join("\n")}\n\nRECORDATORIO: No menciones ningún producto que no esté en esta lista.`;
 }
 
 /**
