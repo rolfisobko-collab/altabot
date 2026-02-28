@@ -10,6 +10,7 @@ let sock = null;
 let status = "disconnected"; // disconnected | connecting | qr_ready | connected
 let qrDataUrl = null;
 let qrRaw = null;
+let intentionalDisconnect = false;
 
 function getWhatsappStatus() {
   return { status, qrDataUrl, qrRaw };
@@ -63,9 +64,14 @@ async function connectWhatsapp() {
 
     if (connection === "close") {
       const code = lastDisconnect?.error?.output?.statusCode;
-      const shouldReconnect = code !== DisconnectReason.loggedOut;
-      console.log(`[WA] Connection closed (code ${code}), reconnect: ${shouldReconnect}`);
+      console.log(`[WA] Connection closed (code ${code}), intentional: ${intentionalDisconnect}`);
 
+      if (intentionalDisconnect) {
+        intentionalDisconnect = false;
+        return;
+      }
+
+      const shouldReconnect = code !== DisconnectReason.loggedOut;
       if (!shouldReconnect) {
         clearAuthFiles();
         status = "disconnected";
@@ -145,8 +151,9 @@ function clearAuthFiles() {
 }
 
 async function disconnectWhatsapp() {
+  intentionalDisconnect = true;
   if (sock) {
-    await sock.logout().catch(() => {});
+    try { sock.end(); } catch {}
     sock = null;
   }
   clearAuthFiles();
