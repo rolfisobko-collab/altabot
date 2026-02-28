@@ -56,25 +56,23 @@ async function searchProducts(userQuery) {
     .limit(config.maxProductsFromDB)
     .toArray();
 
-  // If AND search got nothing, try relaxing one keyword at a time (still AND, not OR)
+  // Also try with fewer keywords if we get zero results (fallback: OR logic)
   if (raw.length === 0) {
     const keywords = normalize(userQuery)
       .replace(/[\u00bf?\u00a1!.,;:]/g, " ")
       .split(/\s+/)
       .filter((w) => w.length > 2);
 
-    // Try dropping the least specific keyword (first stopword-free word) to widen slightly
-    if (keywords.length > 2) {
-      const relaxed = keywords.slice(1); // drop first keyword, keep rest AND
-      const relaxedConditions = relaxed.map((kw) => ({
+    if (keywords.length > 1) {
+      const orConditions = keywords.map((kw) => ({
         name: { $regex: kw, $options: "i" },
       }));
-      const relaxedResults = await db
+      const fallback = await db
         .collection("stock")
-        .find({ $and: relaxedConditions })
+        .find({ $or: orConditions })
         .limit(config.maxProductsFromDB)
         .toArray();
-      return formatProducts(relaxedResults);
+      return formatProducts(fallback);
     }
   }
 

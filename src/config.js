@@ -68,10 +68,10 @@ REGLAS DE NEGOCIO — CRÍTICO:
   currency: "USD",
 
   // Máximo de productos a mostrar en una respuesta
-  maxProductsInResponse: 5,
+  maxProductsInResponse: 8,
 
   // Cuántos productos traer de la DB al buscar
-  maxProductsFromDB: 8,
+  maxProductsFromDB: 15,
 };
 
 module.exports = BUSINESS_CONFIG;
