@@ -1,7 +1,6 @@
 const { default: makeWASocket, DisconnectReason, useMultiFileAuthState, fetchLatestBaileysVersion } = require("@whiskeysockets/baileys");
 const qrcode = require("qrcode");
 const path = require("path");
-const fs = require("fs");
 const { processMessage } = require("./ai");
 
 const AUTH_PATH = path.join(__dirname, "../.wa_auth");
@@ -10,7 +9,6 @@ let sock = null;
 let status = "disconnected"; // disconnected | connecting | qr_ready | connected
 let qrDataUrl = null;
 let qrRaw = null;
-let intentionalDisconnect = false;
 
 function getWhatsappStatus() {
   return { status, qrDataUrl, qrRaw };
@@ -64,21 +62,15 @@ async function connectWhatsapp() {
 
     if (connection === "close") {
       const code = lastDisconnect?.error?.output?.statusCode;
-      console.log(`[WA] Connection closed (code ${code}), intentional: ${intentionalDisconnect}`);
-
-      if (intentionalDisconnect) {
-        intentionalDisconnect = false;
-        return;
-      }
-
       const shouldReconnect = code !== DisconnectReason.loggedOut;
-      if (!shouldReconnect) {
-        clearAuthFiles();
-        status = "disconnected";
-        sock = null;
-      } else {
+      console.log(`[WA] Connection closed (code ${code}), reconnect: ${shouldReconnect}`);
+
+      if (shouldReconnect) {
         status = "connecting";
         setTimeout(() => connectWhatsapp(), 5000);
+      } else {
+        status = "disconnected";
+        sock = null;
       }
     }
   });
@@ -139,24 +131,11 @@ async function connectWhatsapp() {
   });
 }
 
-function clearAuthFiles() {
-  try {
-    if (fs.existsSync(AUTH_PATH)) {
-      fs.rmSync(AUTH_PATH, { recursive: true, force: true });
-      console.log("[WA] Auth files cleared");
-    }
-  } catch (err) {
-    console.error("[WA] Error clearing auth files:", err.message);
-  }
-}
-
 async function disconnectWhatsapp() {
-  intentionalDisconnect = true;
   if (sock) {
-    try { sock.end(); } catch {}
+    await sock.logout().catch(() => {});
     sock = null;
   }
-  clearAuthFiles();
   status = "disconnected";
   qrDataUrl = null;
   qrRaw = null;
