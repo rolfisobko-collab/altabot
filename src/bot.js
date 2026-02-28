@@ -2,6 +2,45 @@ const axios = require("axios");
 const { getConfig } = require("./configLoader");
 const { processMessage, clearHistory } = require("./ai");
 const { getCategories } = require("./products");
+const { getDb } = require("./db");
+
+let cachedRates = null;
+let ratesFetchedAt = 0;
+
+async function getExchangeRates() {
+  if (cachedRates && Date.now() - ratesFetchedAt < 5 * 60 * 1000) return cachedRates;
+  try {
+    const db = await getDb();
+    const rates = await db.collection("exchangeRates").find({}).toArray();
+    cachedRates = {};
+    for (const r of rates) cachedRates[r.toCurrency] = r.rate;
+    ratesFetchedAt = Date.now();
+  } catch { cachedRates = {}; }
+  return cachedRates;
+}
+
+function formatCaption(p, rates) {
+  const usd = p.promoPrice || p.price;
+  const isPromo = !!p.promoPrice;
+
+  let priceBlock;
+  if (!usd || usd === 0) {
+    priceBlock = "💬 Precio a consultar";
+  } else {
+    const ars = rates.ARS ? `🇦🇷 $${Math.round(usd * rates.ARS).toLocaleString("es-AR")} pesos` : "";
+    const brl = rates.REAL ? `🇧🇷 R$ ${(usd * rates.REAL).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "";
+    const pyg = rates.GUARANI ? `🇵🇾 ₲ ${Math.round(usd * rates.GUARANI).toLocaleString("es-PY")}` : "";
+    const currencies = [ars, brl, pyg].filter(Boolean).join("  |  ");
+    if (isPromo) {
+      priceBlock = `💥 *PROMO: $${p.promoPrice} USD* ~~$${p.regularPrice}~~\n${currencies}`;
+    } else {
+      priceBlock = `💵 $${usd} USD\n${currencies}`;
+    }
+  }
+
+  const stockStr = p.inStock ? "✅ En stock" : "❌ Sin stock";
+  return `📦 *${p.name}*\n${priceBlock}\n${stockStr}`;
+}
 
 let running = false;
 let offset = 0;
@@ -97,32 +136,27 @@ async function handleMessage(token, msg) {
   try {
     const { text: responseText, products } = await processMessage(chatId, text);
 
-    // Send the main AI text response
+    // Send the AI intro text
     await safeSend(token, chatId, responseText);
 
-    // Send images for all products that have one (up to 8)
-    const withImages = (products || []).filter((p) => p.imageUrl).slice(0, 8);
-    for (const p of withImages) {
-      const priceStr =
-        !p.price || p.price === 0
-          ? "💬 Precio a consultar"
-          : p.promoPrice
-          ? `💥 *PROMO: $${p.promoPrice} ${p.currency}* ~~$${p.regularPrice}~~`
-          : `💵 *$${p.price} ${p.currency}*`;
-
-      const stockStr = p.inStock ? `✅ En stock` : `❌ Sin stock`;
-
-      const caption = `📦 *${p.name}*\n${priceStr}\n${stockStr}`;
-
-      try {
-        await tg(token, "sendPhoto", {
-          chat_id: chatId,
-          photo: p.imageUrl,
-          caption,
-          parse_mode: "Markdown",
-        });
-      } catch {
-        // If photo fails, skip silently
+    // Send each product as individual photo+caption in relevance order
+    if (products && products.length > 0) {
+      const rates = await getExchangeRates();
+      for (const p of products.slice(0, 8)) {
+        const caption = formatCaption(p, rates);
+        if (p.imageUrl) {
+          try {
+            await tg(token, "sendPhoto", {
+              chat_id: chatId,
+              photo: p.imageUrl,
+              caption,
+              parse_mode: "Markdown",
+            });
+            continue;
+          } catch { /* fall through to text */ }
+        }
+        // No image: send as text message
+        await safeSend(token, chatId, caption);
       }
     }
 
