@@ -1,6 +1,7 @@
 const { default: makeWASocket, DisconnectReason, useMultiFileAuthState, fetchLatestBaileysVersion } = require("@whiskeysockets/baileys");
 const qrcode = require("qrcode");
 const path = require("path");
+const fs = require("fs");
 const { processMessage } = require("./ai");
 
 const AUTH_PATH = path.join(__dirname, "../.wa_auth");
@@ -65,12 +66,13 @@ async function connectWhatsapp() {
       const shouldReconnect = code !== DisconnectReason.loggedOut;
       console.log(`[WA] Connection closed (code ${code}), reconnect: ${shouldReconnect}`);
 
-      if (shouldReconnect) {
-        status = "connecting";
-        setTimeout(() => connectWhatsapp(), 5000);
-      } else {
+      if (!shouldReconnect) {
+        clearAuthFiles();
         status = "disconnected";
         sock = null;
+      } else {
+        status = "connecting";
+        setTimeout(() => connectWhatsapp(), 5000);
       }
     }
   });
@@ -131,11 +133,23 @@ async function connectWhatsapp() {
   });
 }
 
+function clearAuthFiles() {
+  try {
+    if (fs.existsSync(AUTH_PATH)) {
+      fs.rmSync(AUTH_PATH, { recursive: true, force: true });
+      console.log("[WA] Auth files cleared");
+    }
+  } catch (err) {
+    console.error("[WA] Error clearing auth files:", err.message);
+  }
+}
+
 async function disconnectWhatsapp() {
   if (sock) {
     await sock.logout().catch(() => {});
     sock = null;
   }
+  clearAuthFiles();
   status = "disconnected";
   qrDataUrl = null;
   qrRaw = null;
