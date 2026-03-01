@@ -136,27 +136,23 @@ async function handleMessage(token, msg) {
   try {
     const { text: responseText, products } = await processMessage(chatId, text);
 
-    // Send the AI intro text
+    // Send the main AI text response
     await safeSend(token, chatId, responseText);
 
-    // Send each product as individual photo+caption in relevance order
-    if (products && products.length > 0) {
-      const rates = await getExchangeRates();
-      for (const p of products.slice(0, 8)) {
-        const caption = formatCaption(p, rates);
-        if (p.imageUrl) {
-          try {
-            await tg(token, "sendPhoto", {
-              chat_id: chatId,
-              photo: p.imageUrl,
-              caption,
-              parse_mode: "Markdown",
-            });
-            continue;
-          } catch { /* fall through to text */ }
-        }
-        // No image: send as text message
-        await safeSend(token, chatId, caption);
+    // Send photos for the first 3 products with images, in relevance order
+    const withImages = (products || []).filter((p) => p.imageUrl).slice(0, 3);
+    const rates = withImages.length > 0 ? await getExchangeRates() : {};
+    for (const p of withImages) {
+      const caption = formatCaption(p, rates);
+      try {
+        await tg(token, "sendPhoto", {
+          chat_id: chatId,
+          photo: p.imageUrl,
+          caption,
+          parse_mode: "Markdown",
+        });
+      } catch {
+        // skip if image fails
       }
     }
 
